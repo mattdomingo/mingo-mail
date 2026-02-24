@@ -69,10 +69,10 @@ Claude can inspect the result of each tool call before deciding what to do next.
 ### 3. Configure your `.env` file
 
 ```bash
-cp .env.example .env
+cp email_agent/.env.example email_agent/.env
 ```
 
-Open `.env` and fill in your values:
+Open `email_agent/.env` and fill in your values:
 
 ```env
 ANTHROPIC_API_KEY=sk-ant-...
@@ -103,7 +103,7 @@ IMAP_PASS=your-app-password
 ### 4. Run
 
 ```bash
-python3 email_agent.py
+python3 email_agent/email_agent.py
 ```
 
 That's it. The script auto-installs `anthropic` and `python-dotenv` on first run if they're not already present.
@@ -155,12 +155,12 @@ SUMMARY: 1 urgent, 1 work, 1 newsletter, 1 personal, 1 spam
 ```
 mingo-mail/
   .gitignore
+  README.md             # this file
   email_agent/
-    email_agent.py    # the entire agent in one file
-    .env.example      # copy this to .env and fill in your credentials
-    .env              # your credentials — never committed
-    requirements.txt  # anthropic, python-dotenv
-    README.md         # this file
+    email_agent.py      # the entire agent in one file
+    .env.example        # copy this to .env and fill in your credentials
+    .env                # your credentials — never committed
+    requirements.txt    # anthropic, python-dotenv
 ```
 
 ---
@@ -193,7 +193,7 @@ Claude's classification decision is extracted from the `category` argument it pa
 
 ## Troubleshooting
 
-**`IMAP_USER and IMAP_PASS must be set`** — Your `.env` file is missing or not in the same directory as `email_agent.py`. Make sure you ran `cp .env.example .env` and filled it in.
+**`IMAP_USER and IMAP_PASS must be set`** — Your `.env` file is missing or not in the `email_agent/` directory. Make sure you ran `cp email_agent/.env.example email_agent/.env` and filled it in.
 
 **Gmail login failure** — You must use an App Password. Regular Gmail passwords are rejected over IMAP when 2FA is enabled.
 
