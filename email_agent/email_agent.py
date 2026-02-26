@@ -153,17 +153,19 @@ TOOLS = [
         "description": (
             "Generate a concise one-line summary of an email for the triage report. "
             "Call this after classify_email, passing the category you got. "
-            "Keep the summary under 80 characters. Capture the key action or information."
+            "Pass your summary as the 'summary' argument — keep it under 80 characters "
+            "and capture the key action or information the recipient needs to know."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "category": {"type": "string", "description": "Category from classify_email — required"},
+                "summary":  {"type": "string", "description": "One-line summary of the email, under 80 characters — required"},
                 "sender":   {"type": "string"},
                 "subject":  {"type": "string"},
                 "body":     {"type": "string"},
             },
-            "required": ["category"],
+            "required": ["category", "summary"],
         },
     },
     {
@@ -222,11 +224,11 @@ def tool_classify_email(sender: str = "", subject: str = "", body: str = "") -> 
     return json.dumps({"status": "ok", "sender": sender, "subject": subject})
 
 
-def tool_generate_summary(category: str, sender: str = "", subject: str = "", body: str = "") -> str:
-    """Return JSON acknowledging summary generation with the confirmed category."""
-    # Claude passes the category it chose in classify_email as an argument here.
-    # This is how we extract Claude's classification decision after the loop.
-    return json.dumps({"status": "ok", "category": category})
+def tool_generate_summary(category: str, summary: str = "", sender: str = "", subject: str = "", body: str = "") -> str:
+    """Return JSON acknowledging summary generation with the confirmed category and summary."""
+    # Claude passes both the category and the summary text as arguments here.
+    # Both are extracted from tool_results_collected after the loop.
+    return json.dumps({"status": "ok", "category": category, "summary": summary})
 
 
 def tool_draft_reply(sender: str = "", subject: str = "", body: str = "") -> str:
@@ -596,9 +598,10 @@ def process_email_with_claude(
     # ── End of agentic loop ───────────────────────────────────────────────────
 
     # Extract results from tool call INPUTS — that's where Claude's decisions live.
-    # Claude chose the category by passing it as an argument to generate_summary.
+    # Claude chose the category and summary by passing them as arguments to generate_summary.
     # Claude chose to draft a reply by calling draft_reply at all.
     category = "work"
+    summary  = ""
 
     if "generate_summary" in tool_results_collected:
         # Claude passed its classification decision as the `category` argument here.
@@ -607,6 +610,7 @@ def process_email_with_claude(
         # string into the triage report or downstream logic.
         args, _ = tool_results_collected["generate_summary"]
         category = validate_category(args.get("category", "work"))
+        summary  = args.get("summary", "")[:80]
 
     # Save draft if Claude called draft_reply (only happens for urgent emails per prompt)
     if "draft_reply" in tool_results_collected:
@@ -623,6 +627,7 @@ def process_email_with_claude(
     return {
         "email":       email_data,
         "category":    category,
+        "summary":     summary,
         "draft_saved": draft_saved,
     }
 
@@ -643,6 +648,9 @@ def print_report(results: list) -> None:
         subject = r["email"]["subject"][:45]
         line    = f"{label} {sender:<30} | {subject}"
         print(line)
+
+        if r.get("summary"):
+            print(f"  {DIM}↳ {r['summary']}{RESET}")
 
         if r["draft_saved"]:
             print(f"  {YELLOW}↳ Draft reply saved to Drafts folder{RESET}")
