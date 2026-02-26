@@ -103,7 +103,7 @@ IMAP_PASS=your-app-password
 ### 4. Run
 
 ```bash
-python3 email_agent/email_agent.py
+email_agent/.venv/bin/python email_agent/email_agent.py
 ```
 
 That's it. The script auto-installs `anthropic` and `python-dotenv` on first run if they're not already present.

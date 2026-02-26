@@ -27,6 +27,7 @@ every line is readable.
 """
 
 import importlib.util
+import os
 import subprocess
 import sys
 
@@ -37,13 +38,55 @@ import sys
 # For production deployments, remove this block and install via requirements.txt
 # with hash-pinned entries (`pip install --require-hashes -r requirements.txt`).
 _DEPS = ["anthropic>=0.40.0", "python-dotenv>=1.0.0"]
+# Some packages have a different importable name than their PyPI distribution name.
+_IMPORT_NAME = {"python-dotenv": "dotenv"}
 _missing = [
     d for d in _DEPS
-    if importlib.util.find_spec(d.split(">=")[0].replace("-", "_")) is None
+    if importlib.util.find_spec(
+        _IMPORT_NAME.get(d.split(">=")[0], d.split(">=")[0].replace("-", "_"))
+    ) is None
 ]
 if _missing:
     print(f"Installing missing dependencies: {', '.join(_missing)}")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", *_missing])
+    # On Homebrew / PEP 668 managed Pythons (macOS), a plain `pip install` and
+    # even `pip install --user` are blocked to protect the system environment.
+    # Try strategies in order: plain → --user → use/create a .venv.
+    _install_ok = False
+
+    for _flags in ([], ["--user"]):
+        try:
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", "--quiet", *_flags, *_missing],
+                stderr=subprocess.DEVNULL,
+            )
+            _install_ok = True
+            break
+        except subprocess.CalledProcessError:
+            continue
+
+    if not _install_ok:
+        # Last resort: create a .venv next to this script and re-launch inside it.
+        _script_dir = os.path.dirname(os.path.abspath(__file__))
+        _venv_dir   = os.path.join(_script_dir, ".venv")
+        _venv_pip   = os.path.join(_venv_dir, "bin", "pip")
+        _venv_py    = os.path.join(_venv_dir, "bin", "python")
+        try:
+            if not os.path.isdir(_venv_dir):
+                print(f"Creating virtual environment at {_venv_dir} ...")
+                subprocess.check_call([sys.executable, "-m", "venv", _venv_dir])
+            subprocess.check_call([_venv_pip, "install", "--quiet", *_missing])
+            # Re-launch this script inside the venv so imports resolve correctly.
+            os.execv(_venv_py, [_venv_py] + sys.argv)
+        except Exception as _venv_err:
+            print(
+                f"\nAuto-install failed ({_venv_err}).\n"
+                "Please set up a virtual environment manually:\n"
+                f"  python3 -m venv {_venv_dir}\n"
+                f"  source {_venv_dir}/bin/activate\n"
+                f"  pip install {' '.join(_missing)}\n"
+                "Then run the script again."
+            )
+            sys.exit(1)
 
 import email
 import email.mime.text
@@ -51,7 +94,6 @@ import email.utils
 import html.parser
 import imaplib
 import json
-import os
 import re
 import time
 
