@@ -224,7 +224,7 @@ def tool_classify_email(sender: str = "", subject: str = "", body: str = "") -> 
     return json.dumps({"status": "ok", "sender": sender, "subject": subject})
 
 
-def tool_generate_summary(category: str, summary: str = "", sender: str = "", subject: str = "", body: str = "") -> str:
+def tool_generate_summary(category: str = "work", summary: str = "", sender: str = "", subject: str = "", body: str = "") -> str:
     """Return JSON acknowledging summary generation with the confirmed category and summary."""
     # Claude passes both the category and the summary text as arguments here.
     # Both are extracted from tool_results_collected after the loop.
