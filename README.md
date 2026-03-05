@@ -12,43 +12,31 @@ This project showcases the **agentic loop** pattern — the core building block 
 
 ```mermaid
 flowchart TD
-    A[run_agent()] --> B[Connect IMAP]
-    B --> C[Fetch emails]
-    C --> D{Any emails?}
+    A["run_agent()"] --> B[Connect IMAP & fetch emails]
+    B --> D{Any emails?}
     D -- No --> Z[Logout + Exit]
     D -- Yes --> E[For each email]
 
-    subgraph One Email: process_email_with_claude()
-      E --> F[Sanitize sender/subject/body]
-      F --> G[Create initial user message with email_content tags]
-      G --> H[Initialize messages + tool_results_collected]
-      H --> I[Call Claude messages.create with tools + system prompt]
+    subgraph oneEmail ["One Email: process_email_with_claude()"]
+      E --> F[Sanitize & prepare initial message]
+      F --> I[Call Claude with tools + system prompt]
       I --> J[Append assistant response to messages]
-      J --> K{stop_reason == end_turn?}
+      J --> K{"stop_reason == end_turn?"}
 
-      K -- No --> L[Iterate response content blocks]
-      L --> M{block.type == tool_use?}
-      M -- No --> L
-      M -- Yes --> N[safe_dispatch(block.name, block.input)]
-      N --> O[Store tool input/result]
-      O --> P[Build tool_result block]
-      P --> L
-      L --> Q{Any tool_result blocks?}
-      Q -- Yes --> R[Append user tool_result message]
-      Q -- No --> I
+      K -- No --> N["Dispatch tool calls via safe_dispatch()"]
+      N --> R[Append tool results to messages]
       R --> I
 
-      K -- Yes --> S[Extract category + summary from generate_summary args]
+      K -- Yes --> S[Extract category + summary]
       S --> T{draft_reply called?}
-      T -- Yes --> U[save_draft() via IMAP APPEND; mark urgent]
-      T -- No --> V[No draft saved]
-      U --> W[Return per-email result]
-      V --> W
+      T -- Yes --> U["save_draft() via IMAP APPEND"]
+      T -- No --> W[Return per-email result]
+      U --> W
     end
 
     W --> X[Collect result]
     X --> E
-    E --> Y[print_report(results)]
+    E --> Y["print_report(results)"]
     Y --> Z
 ```
 
