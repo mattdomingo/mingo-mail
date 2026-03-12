@@ -1,6 +1,7 @@
 # Email Inbox Triage Agent
 
 A minimal Python script that connects to your real email inbox and uses **Claude's tool-use API** as an autonomous agent to classify, summarize, and draft replies for your emails — no ML models, no databases, no frameworks.
+**NOTE:** this is an educational repository. Documentation is over-verbose on purpose.
 
 ---
 
